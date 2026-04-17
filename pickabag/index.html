@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Let's Go Shopping!</title>
+    <style>
+        :root {
+            --primary-bg: #e3f2fd;
+            --teamA-color: #2196f3;
+            --teamB-color: #f44336;
+            --gold: #ffc107;
+        }
+
+        * { box-sizing: border-box; font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif; }
+
+        body {
+            margin: 0;
+            background-color: var(--primary-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- SCREEN MANAGEMENT --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+        .active { display: flex; }
+
+        /* --- SELECTION SCREEN / MAIN MENU --- */
+        #selection-screen {
+            background-image: url('home_bg.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        #selection-screen::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.25);
+            z-index: 1;
+        }
+
+        #selection-screen > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        h1.game-title {
+            font-size: 7rem;
+            color: #0d47a1;
+            margin: 0 0 15px 0;
+            text-shadow: 6px 6px 0px #fff, -3px -3px 0px #fff, 3px -3px 0px #fff, -3px 3px 0px #fff;
+            letter-spacing: 2px;
+        }
+
+        #selection-instruction {
+            background: white;
+            padding: 15px 40px;
+            border-radius: 60px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            font-size: 3rem !important;
+            border: 4px solid currentColor;
+        }
+
+        /* --- CHARACTER SELECTION --- */
+        .char-grid {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .char-card {
+            border: 10px solid #fff;
+            border-radius: 35px;
+            padding: 25px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.95);
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+        .char-card:hover { transform: scale(1.1); }
+        .char-card.disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+        .char-card.selected-A { border-color: var(--teamA-color); background: #e3f2fd; }
+        .char-card.selected-B { border-color: var(--teamB-color); background: #ffebee; }
+        .char-card img { width: 220px; height: 220px; object-fit: contain; }
+        .char-card p { margin: 15px 0 0 0; font-size: 2.5rem; font-weight: bold; color: #333; }
+
+        /* --- MAIN GAME LAYOUT --- */
+        #main-game-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 0;
+            height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
+        .home-btn {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            background: white;
+            border: 4px solid #333;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        .home-btn:hover {
+            transform: translateX(-50%) scale(1.1);
+            background: #f0f0f0;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            transition: background 0.3s;
+            z-index: 1100; 
+            position: relative;
+        }
+        .side-panel.active-turn { background: #fffde7; outline: 10px inset var(--gold); }
+        .team-name { font-size: 2.5rem; margin-bottom: 10px; }
+        .team-avatar { width: 220px; height: 220px; object-fit: contain; transition: transform 0.3s; }
+        .money-display { font-size: 3.5rem; color: #27ae60; font-weight: bold; margin: 20px 0; }
+        .money-display.negative { color: #e74c3c; }
+        .turn-indicator { font-size: 1.8rem; font-weight: bold; color: #f39c12; }
+
+        /* --- BAG GRID --- */
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            padding-top: 110px;
+            position: relative;
+            z-index: 10;
+        }
+        .turn-banner {
+            background: white;
+            padding: 10px 40px;
+            border-radius: 50px;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 5px solid #333;
+        }
+        .bag-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 12px;
+            width: 100%;
+            height: calc(100% - 80px);
+        }
+        
+        .bag-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .bag-wrapper:hover { transform: scale(1.1); }
+        .bag-wrapper.opened { opacity: 0.2; cursor: default; filter: sepia(1); pointer-events: none; }
+        .bag-img { width: 100%; height: 100%; max-height: 110px; object-fit: contain; }
+        .bag-number {
+            position: absolute;
+            top: 55%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.2rem; font-weight: 900;
+            color: #333; text-shadow: 2px 2px 0 white;
+            pointer-events: none;
+        }
+
+        /* --- MODAL --- */
+        #modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 40px;
+            width: 95%;
+            max-width: 800px;
+            text-align: center;
+            border: 12px solid var(--gold);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .question-img { width: 300px; height: 300px; object-fit: contain; margin-bottom: 10px; }
+        .question-text { font-size: 3rem; color: #333; margin: 10px 0; font-weight: bold; }
+        .ans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-top: 10px; }
+        
+        .btn {
+            padding: 20px;
+            font-size: 2.2rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 8px 0 #2980b9;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #2980b9; }
+        .btn-confirm { background: #2ecc71; box-shadow: 0 8px 0 #27ae60; padding: 20px 80px; margin-top: 10px; font-size: 2.5rem; }
+        .btn-start { background: #f39c12; box-shadow: 0 8px 0 #d35400; padding: 25px 120px; font-size: 4rem; margin-top: 40px; }
+
+        /* --- ANIMATIONS --- */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-15px); }
+            40%, 80% { transform: translateX(15px); }
+        }
+        .bounce { animation: bounce 0.5s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SELECTION SCREEN -->
+    <div id="selection-screen" class="screen active">
+        <h1 class="game-title">LET'S GO SHOPPING!</h1>
+        <h2 id="selection-instruction" style="color: var(--teamA-color);">TEAM A: CHOOSE YOUR CHARACTER!</h2>
+        <div class="char-grid" id="char-options"></div>
+        <button id="start-btn" class="btn btn-start" style="display: none;" onclick="launchGame()">START GAME</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="screen" style="padding:0;">
+        <div id="main-game-layout">
+            <button class="home-btn" title="Return to Menu" onclick="returnToMenu()">
+                <svg viewBox="0 0 24 24" width="45" height="45" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </button>
+
+            <div id="panel-A" class="side-panel">
+                <h2 class="team-name" style="color: var(--teamA-color)">Team A</h2>
+                <img id="avatar-A" class="team-avatar" src="">
+                <div class="money-display" id="money-A">$0</div>
+                <div id="label-A" class="turn-indicator">WAITING...</div>
+            </div>
+
+            <div class="center-area">
+                <div id="turn-banner" class="turn-banner">Team A's Turn</div>
+                <div class="bag-container" id="grid"></div>
+            </div>
+
+            <div id="panel-B" class="side-panel">
+                <h2 class="team-name" style="color: var(--teamB-color)">Team B</h2>
+                <img id="avatar-B" class="team-avatar" src="">
+                <div class="money-display" id="money-B">$0</div>
+                <div id="label-B" class="turn-indicator">WAITING...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end-screen" class="screen">
+        <h1 style="font-size: 5rem;" id="winner-msg">WINNER!</h1>
+        <div style="display: flex; gap: 50px; margin: 40px;">
+            <div class="side-panel" style="border-radius: 20px;">
+                <h2>Team A</h2>
+                <img id="end-avatar-A" class="team-avatar" src="">
+                <div class="money-display" id="end-money-A"></div>
+            </div>
+            <div class="side-panel" style="border-radius: 20px;">
+                <h2>Team B</h2>
+                <img id="end-avatar-B" class="team-avatar" src="">
+                <div class="money-display" id="end-money-B"></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px;">
+            <button class="btn btn-start" onclick="returnToMenu()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modal-overlay">
+        <div class="modal-content" id="modal-inner"></div>
+    </div>
+
+    <script>
+        const characters = [
+            { id: 'spongebob', name: 'Spongebob', main: 'spongebob_team.png', happy: 'spongebob_happy.gif', sad: 'spongebob_sad.gif' },
+            { id: 'squidward', name: 'Squidward', main: 'squidward_team.png', happy: 'squidward_happy.gif', sad: 'squidward_sad.gif' },
+            { id: 'mrkrabs', name: 'Mr. Krabs', main: 'mrkrabs_team.png', happy: 'mrkrabs_happy.gif', sad: 'mrkrabs_sad.gif' },
+            { id: 'patrick', name: 'Patrick', main: 'patrick_team.png', happy: 'patrick_happy.gif', sad: 'patrick_sad.gif' },
+            { id: 'sandy', name: 'Sandy', main: 'sandy_team.png', happy: 'sandy_happy.gif', sad: 'sandy_sad.gif' }
+        ];
+
+        const questions = [
+            { image: "cap.png", prompt: "What is this? It's a _______.", correct: "cap", choices: ["cap", "scarf", "belt", "blouse"] },
+            { image: "scarf.png", prompt: "What is this? It's a _______.", correct: "scarf", choices: ["cap", "scarf", "belt", "blouse"] },
+            { image: "sunglasses.png", prompt: "What are these? They're _______.", correct: "sunglasses", choices: ["sunglasses", "gloves", "socks", "boots"] },
+            { image: "blouse.png", prompt: "What is this? It's a _______.", correct: "blouse", choices: ["blouse", "polo shirt", "trousers", "belt"] },
+            { image: "polo_shirt.png", prompt: "What is this? It's a _______.", correct: "polo shirt", choices: ["polo shirt", "cap", "belt", "gloves"] },
+            { image: "gloves.png", prompt: "What are these? They're _______.", correct: "gloves", choices: ["sunglasses", "gloves", "socks", "boots"] },
+            { image: "belt.png", prompt: "What is this? It's a _______.", correct: "belt", choices: ["belt", "scarf", "trousers", "boots"] },
+            { image: "socks.png", prompt: "What are these? They're _______.", correct: "socks", choices: ["sunglasses", "gloves", "socks", "boots"] },
+            { image: "boots.png", prompt: "What are these? They're _______.", correct: "boots", choices: ["sunglasses", "gloves", "socks", "boots"] },
+            { image: "trousers.png", prompt: "What are these? They're _______.", correct: "trousers", choices: ["trousers", "socks", "blouse", "belt"] }
+        ];
+
+        const SETTINGS = {
+            totalBags: 30,
+            rewardRange: [200, 1000],
+            penaltyRange: [100, 500],
+            trapChance: 0.30,
+            reactionTime: 3000
+        };
+
+        let state = {
+            currentTeam: 'A',
+            teamAChar: null,
+            teamBChar: null,
+            scoreA: 0,
+            scoreB: 0,
+            bagsOpened: 0,
+            selectionTurn: 'A',
+            isAnimating: false
+        };
+
+        function init() {
+            const container = document.getElementById('char-options');
+            container.innerHTML = '';
+            characters.forEach(char => {
+                const div = document.createElement('div');
+                div.className = 'char-card';
+                div.id = `card-${char.id}`;
+                div.innerHTML = `<img src="${char.main}"><p>${char.name}</p>`;
+                div.onclick = () => selectChar(char);
+                container.appendChild(div);
+            });
+            
+            state.selectionTurn = 'A';
+            state.teamAChar = null;
+            state.teamBChar = null;
+            state.scoreA = 0;
+            state.scoreB = 0;
+            state.bagsOpened = 0;
+            state.currentTeam = 'A';
+            
+            document.getElementById('selection-instruction').innerText = "TEAM A: CHOOSE YOUR CHARACTER!";
+            document.getElementById('selection-instruction').style.color = "var(--teamA-color)";
+            document.getElementById('start-btn').style.display = 'none';
+        }
+
+        function selectChar(char) {
+            if (state.selectionTurn === 'A') {
+                state.teamAChar = char;
+                document.getElementById(`card-${char.id}`).classList.add('selected-A', 'disabled');
+                state.selectionTurn = 'B';
+                const inst = document.getElementById('selection-instruction');
+                inst.innerText = "TEAM B: CHOOSE YOUR CHARACTER!";
+                inst.style.color = "var(--teamB-color)";
+            } else if (state.selectionTurn === 'B') {
+                if (state.teamAChar.id === char.id) return;
+                state.teamBChar = char;
+                document.getElementById(`card-${char.id}`).classList.add('selected-B', 'disabled');
+                state.selectionTurn = 'DONE';
+                document.getElementById('selection-instruction').innerText = "ALL READY! LET'S GO!";
+                document.getElementById('start-btn').style.display = 'block';
+            }
+        }
+
+        function returnToMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('selection-screen').classList.add('active');
+            init();
+        }
+
+        function launchGame() {
+            document.getElementById('selection-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            document.getElementById('avatar-A').src = state.teamAChar.main;
+            document.getElementById('avatar-B').src = state.teamBChar.main;
+            updateMoneyDisplay();
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= SETTINGS.totalBags; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bag-wrapper';
+                wrapper.onclick = () => handleBagClick(wrapper);
+                wrapper.innerHTML = `<img src="shopping_bag.png" class="bag-img"><div class="bag-number">${i}</div>`;
+                grid.appendChild(wrapper);
+            }
+            updateTurnUI();
+        }
+
+        function updateMoneyDisplay() {
+            const elA = document.getElementById('money-A');
+            const elB = document.getElementById('money-B');
+            
+            elA.innerText = (state.scoreA < 0 ? '-$' + Math.abs(state.scoreA) : '$' + state.scoreA);
+            elB.innerText = (state.scoreB < 0 ? '-$' + Math.abs(state.scoreB) : '$' + state.scoreB);
+            
+            elA.className = 'money-display' + (state.scoreA < 0 ? ' negative' : '');
+            elB.className = 'money-display' + (state.scoreB < 0 ? ' negative' : '');
+        }
+
+        function updateTurnUI() {
+            const isA = state.currentTeam === 'A';
+            document.getElementById('panel-A').classList.toggle('active-turn', isA);
+            document.getElementById('panel-B').classList.toggle('active-turn', !isA);
+            document.getElementById('label-A').innerText = isA ? "YOUR TURN!" : "WAITING...";
+            document.getElementById('label-B').innerText = !isA ? "YOUR TURN!" : "WAITING...";
+            document.getElementById('turn-banner').innerText = `Team ${state.currentTeam}'s Turn`;
+        }
+
+        function handleBagClick(el) {
+            if (el.classList.contains('opened') || state.isAnimating) return;
+            el.classList.add('opened');
+            state.bagsOpened++;
+            showQuestion();
+        }
+
+        function triggerTeamAnimation(isHappy) {
+            const team = state.currentTeam;
+            const char = team === 'A' ? state.teamAChar : state.teamBChar;
+            const avatar = document.getElementById(`avatar-${team}`);
+            const panel = document.getElementById(`panel-${team}`);
+            
+            avatar.src = isHappy ? char.happy : char.sad;
+            panel.classList.add(isHappy ? 'bounce' : 'shake');
+            
+            state.isAnimating = true;
+            setTimeout(() => {
+                avatar.src = char.main;
+                panel.classList.remove('bounce', 'shake');
+                state.isAnimating = false;
+            }, SETTINGS.reactionTime);
+        }
+
+        function showQuestion() {
+            const q = questions[Math.floor(Math.random() * questions.length)];
+            const overlay = document.getElementById('modal-overlay');
+            const inner = document.getElementById('modal-inner');
+            overlay.style.display = 'flex';
+            const choices = [...q.choices].sort(() => 0.5 - Math.random());
+            
+            inner.innerHTML = `
+                <img src="${q.image}" class="question-img">
+                <p class="question-text">${q.prompt}</p>
+                <div class="ans-grid" id="options"></div>
+            `;
+
+            const optGrid = inner.querySelector('#options');
+            choices.forEach(c => {
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.innerText = c;
+                b.onclick = () => {
+                    if (c === q.correct) {
+                        if (Math.random() < SETTINGS.trapChance) {
+                            const loss = getRandomValue(SETTINGS.penaltyRange);
+                            inner.innerHTML = `
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <h1 style="font-size: 3.5rem; color: #e74c3c; margin: 0;">IT'S A TRAP!</h1>
+                                    <p style="font-size: 2.5rem; margin: 0;">Correct answer, but the item was <strong>defective!</strong></p>
+                                    <p style="font-size: 3rem; font-weight: bold; color: #e74c3c;">-$${loss}</p>
+                                    <img src="sad.gif" style="width:180px;">
+                                    <button class="btn btn-confirm" onclick="closeModal(${-loss})">DARN...</button>
+                                </div>
+                            `;
+                            triggerTeamAnimation(false);
+                        } else {
+                            const win = getRandomValue(SETTINGS.rewardRange);
+                            inner.innerHTML = `
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <h1 style="font-size: 4rem; color: #2ecc71; margin: 0;">CORRECT!</h1>
+                                    <p style="font-size: 3.5rem; margin: 0; font-weight: bold;">+$${win}</p>
+                                    <img src="happy.gif" style="width:180px;">
+                                    <button class="btn btn-confirm" onclick="closeModal(${win})">GREAT!</button>
+                                </div>
+                            `;
+                            triggerTeamAnimation(true);
+                        }
+                    } else {
+                        inner.innerHTML = `
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <h1 style="font-size: 3.5rem; color: #95a5a6; margin: 0;">INCORRECT</h1>
+                                <p style="font-size: 2.5rem; margin: 0;">Nothing bought this turn.</p>
+                                <img src="sad.gif" style="width:180px;">
+                                <button class="btn btn-confirm" onclick="closeModal(0)">CONTINUE</button>
+                            </div>
+                        `;
+                        triggerTeamAnimation(false);
+                    }
+                };
+                optGrid.appendChild(b);
+            });
+        }
+
+        function closeModal(moneyChange) {
+            if (state.currentTeam === 'A') {
+                state.scoreA = state.scoreA + moneyChange; // Logic updated: no Math.max(0, ...)
+            } else {
+                state.scoreB = state.scoreB + moneyChange; // Logic updated: no Math.max(0, ...)
+            }
+            updateMoneyDisplay();
+            document.getElementById('modal-overlay').style.display = 'none';
+            if (state.bagsOpened >= SETTINGS.totalBags) showEnd();
+            else {
+                state.currentTeam = state.currentTeam === 'A' ? 'B' : 'A';
+                updateTurnUI();
+            }
+        }
+
+        function showEnd() {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('end-screen').classList.add('active');
+            document.getElementById('end-avatar-A').src = state.teamAChar.main;
+            document.getElementById('end-avatar-B').src = state.teamBChar.main;
+            
+            const elEndA = document.getElementById('end-money-A');
+            const elEndB = document.getElementById('end-money-B');
+            elEndA.innerText = (state.scoreA < 0 ? '-$' + Math.abs(state.scoreA) : '$' + state.scoreA);
+            elEndB.innerText = (state.scoreB < 0 ? '-$' + Math.abs(state.scoreB) : '$' + state.scoreB);
+            elEndA.className = 'money-display' + (state.scoreA < 0 ? ' negative' : '');
+            elEndB.className = 'money-display' + (state.scoreB < 0 ? ' negative' : '');
+
+            let msg = state.scoreA > state.scoreB ? "🎉 Team A Wins!" : (state.scoreB > state.scoreA ? "🎉 Team B Wins!" : "🤝 Draw!");
+            document.getElementById('winner-msg').innerText = msg;
+        }
+
+        function getRandomValue(range) {
+            return Math.floor(Math.random() * ((range[1] - range[0]) / 100 + 1)) * 100 + range[0];
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

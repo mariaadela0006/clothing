@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CLOTHES - Lesson Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --btn-blue: #4facfe;
+            --btn-blue-shadow: #0062cc;
+            --btn-green: #43e97b;
+            --btn-green-shadow: #28a745;
+            --text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Fredoka', sans-serif;
+            overflow: hidden;
+            background-color: var(--primary-bg);
+        }
+
+        /* Full-screen Background Container */
+        .page-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none; 
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+
+        .page-container.active {
+            display: flex;
+        }
+
+        /* Background assignment from folder structure */
+        #home-page {
+            background-image: url('master_home_page.png');
+            background-color: #a0d8ef;
+        }
+
+        #game-page {
+            background-image: url('pickabag/background.png');
+            background-color: #fce38a;
+        }
+
+        #activity-page {
+            background-image: url('shoppingmath/background.png');
+            background-color: #eaffd0;
+        }
+
+        /* Navigation HUD (Always on top) */
+        .hud-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* 3D Modern Glossy Buttons */
+        .btn-3d {
+            cursor: pointer;
+            border: none;
+            border-radius: 20px;
+            padding: 15px 30px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: white;
+            text-transform: uppercase;
+            box-shadow: 0 8px 0 var(--shadow-color), 0 15px 20px rgba(0,0,0,0.3);
+            transition: all 0.1s ease;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            text-shadow: var(--text-shadow);
+        }
+
+        .btn-3d:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 var(--shadow-color), 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn-home {
+            --shadow-color: #7f8c8d;
+            background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+            padding: 10px 20px;
+            font-size: 1.2rem;
+        }
+
+        .btn-fullscreen {
+            --shadow-color: #2c3e50;
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            padding: 10px 20px;
+            font-size: 1.2rem;
+        }
+
+        /* Main Menu Buttons Layout (Right side vertical) */
+        /* Start from middle and go down as requested */
+        .menu-overlay {
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 400px;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 30px;
+            font-size: 2rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .blue-btn {
+            --shadow-color: var(--btn-blue-shadow);
+            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .green-btn {
+            --shadow-color: var(--btn-green-shadow);
+            background: linear-gradient(to bottom, #43e97b 0%, #38f9d7 100%);
+        }
+
+        /* Container for Embedded Activity Content */
+        .activity-frame-container {
+            width: 100%;
+            height: 100%;
+            border: none;
+            overflow: hidden;
+        }
+
+        /* Responsive Fixes */
+        @media (max-width: 1024px) {
+            .menu-overlay { width: 320px; }
+            .btn-main { font-size: 1.6rem; }
+        }
+
+        @media (max-width: 768px) {
+            .menu-overlay {
+                width: 280px;
+                right: 5%;
+            }
+            .btn-main { font-size: 1.4rem; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Persistent HUD -->
+    <div class="hud-controls">
+        <button class="btn-3d btn-home" onclick="showPage('home-page')">🏠 HOME</button>
+        <button class="btn-3d btn-fullscreen" onclick="toggleFullScreen()">⛶ FULL SCREEN</button>
+    </div>
+
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page-container active">
+        <div class="menu-overlay">
+            <button class="btn-3d btn-main blue-btn" onclick="loadActivity('game-page', 'pickabag/index.html')">
+                GAME:<br>Pick A Shopping Bag!
+            </button>
+            <button class="btn-3d btn-main green-btn" onclick="loadActivity('activity-page', 'shoppingmath/index.html')">
+                ACTIVITY:<br>Shopping Math
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME PAGE CONTAINER -->
+    <div id="game-page" class="page-container">
+        <iframe id="game-iframe" class="activity-frame-container" src="about:blank"></iframe>
+    </div>
+
+    <!-- ACTIVITY PAGE CONTAINER -->
+    <div id="activity-page" class="page-container">
+        <iframe id="activity-iframe" class="activity-frame-container" src="about:blank"></iframe>
+    </div>
+
+    <script>
+        // Audio handling helper
+        function playAudio(path) {
+            const audio = new Audio(path);
+            audio.play().catch(e => console.log("Audio play blocked."));
+        }
+
+        // Load specific activity into iframe and show page
+        function loadActivity(pageId, filePath) {
+            const iframeId = pageId === 'game-page' ? 'game-iframe' : 'activity-iframe';
+            const iframe = document.getElementById(iframeId);
+            
+            // Only reload if the src is different or blank
+            if (iframe.src.indexOf(filePath) === -1) {
+                iframe.src = filePath;
+            }
+            
+            showPage(pageId);
+        }
+
+        // Page Switcher Logic
+        function showPage(pageId) {
+            document.querySelectorAll('.page-container').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            const activePage = document.getElementById(pageId);
+            activePage.classList.add('active');
+
+            // If going back home, we can clear iframes to save memory if needed
+            if (pageId === 'home-page') {
+                // Optional: document.getElementById('game-iframe').src = 'about:blank';
+            }
+        }
+
+        // Full Screen Toggle with Exit Support
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Touch Optimization for iPad / Interactive Boards
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        window.onload = () => {
+            console.log("CLOTHES Lesson Hub - Ready for Classroom Use");
+        };
+    </script>
+</body>
+</html>
